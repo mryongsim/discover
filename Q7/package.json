@@ -1,0 +1,27 @@
+{
+  "name": "github-app-discover",
+  "version": "1.0.0",
+  "description": "Automatically mark issues as stale if older than 10 days also",
+  "main": "server.js",
+  "scripts": {
+    "start": "probot run ./server.js"
+  },
+  "dependencies": {
+    "github-webhook-handler": "^0.6.0",
+    "github-app": "^3.0.0",
+    "github": "^9.2.0",
+    "probot": "^9.0.0",
+    "probot-scheduler": "2.0.0-beta.1"
+  },
+  "engines": {
+    "node": "8.1.x"
+  },
+  "repository": {
+    "url": "https://glitch.com/edit/#!/github-webhook-discover"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "server"
+  ]
+}
