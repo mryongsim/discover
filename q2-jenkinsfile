@@ -1,0 +1,49 @@
+// Q2. Write a Jenkins pipeline to perform static code analysis(Ex Sonarqube) on Pull Requests/Code Reviews?
+//
+// This requires the setup of the plugin 
+// ON Github -> Add a webhook http://<my host>/ghprbhook/ (for pull)
+// ON Jenkins -> Install and and configure GitHub Pull Request Builder
+// On Jenkins -> Create pipeline using GitHub Pull Request Builder + the pipeline code below
+// Other consideration is to use Jenkins GitHub Branch Source plugin if I have an organisation
+
+pipeline {
+    agent {
+        docker {
+            image 'maven:3-alpine'
+            args '-v /root/.m2:/root/.m2'
+        }
+    }
+
+    stages {
+        stage('scm') {
+            steps {
+                echo 'Getting from SCM..'
+                checkout([$class: 'GitSCM', 
+                          branches: [[name: '${sha1}']], 
+                          doGenerateSubmoduleConfigurations: false, 
+                          extensions: [], 
+                          submoduleCfg: [], 
+                          userRemoteConfigs: 
+                          [[credentialsId: 'git_account', 
+                            url: 'https://github.com/mryongsim/simple-java-maven-app.git',
+                            refspec: '+refs/pull/*:refs/remotes/origin/pr/*']]])
+                          
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'mvn -B -DskipTests clean package'
+            }
+        }
+        stage('SonarQube analysis') {
+            steps {
+               script {
+                   scannerHome = tool 'SonarQube Scanner 4.0'
+               }
+               withSonarQubeEnv('sonar'){
+                   sh "${scannerHome}/bin/sonar-scanner -X"
+               }
+            }
+        }
+    }
+}

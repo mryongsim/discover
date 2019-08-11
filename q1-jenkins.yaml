@@ -1,0 +1,56 @@
+# Task: Q1. Setup Jenkins Master/Agents stack on Kubernetes/Docker Swarm.
+#
+# 1. Setup Kubernetes
+# 2. Setup Jenkins using kubctl
+#    kubectl create -f q1-jenkins.yaml 
+# 3. Setup the account:
+#    kubectl create clusterrolebinding permissive-binding --clusterrole=cluster-admin --user=admin --user=kubelet --group=system:serviceaccount
+# 4. In Jenkins, setup the Kubernetes plugin, with a label for the slaves if you wish
+# 5. Run agains slave using the label
+#
+# alternative is to use helm
+# https://github.com/helm/charts/tree/master/stable/jenkins
+#
+#
+#
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:lts-alpine
+        imagePullPolicy: Always
+        ports:
+        - name: http-port
+          containerPort: 8080
+        - name: jnlp-port
+          containerPort: 50000
+        volumeMounts:
+          - name: jenkins-home
+            mountPath: /var/jenkins_home
+      volumes:
+        - name: jenkins-home
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: jenkins

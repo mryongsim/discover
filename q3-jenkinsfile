@@ -1,0 +1,42 @@
+// Q3. Write a Jenkins Pipeline to fetch source from GitHub and publish the (Java/NodeJS) artifacts to Artifactory/Nexus repository.
+//
+// Using a Java project that uses maven and enter in the distribution management section
+// using maven deploy to we deploy the jar to the Nexus
+// Maven settings also stored in Jenkins as a settings file.
+// Fetch from github
+// build with maven
+// publish to nexus
+// 
+pipeline {
+    agent {
+        docker {
+            image 'maven:3-alpine'
+            args '-v /root/.m2:/root/.m2'
+        }
+    }
+
+    stages {
+        stage('scm') {
+            steps {
+                echo 'Getting from SCM..'
+                checkout([$class: 'GitSCM', 
+                          branches: [[name: '*/master']], 
+                          doGenerateSubmoduleConfigurations: false, 
+                          extensions: [], 
+                          submoduleCfg: [], 
+                          userRemoteConfigs: 
+                          [[credentialsId: 'git_account', 
+                            url: 'https://github.com/mryongsim/SimpleProject.git']]])
+                          
+            }
+        }
+        stage('Build') {
+            steps {
+               configFileProvider(
+                    [configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh 'mvn -U -s $MAVEN_SETTINGS clean deploy'
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,43 @@
+app:
+  children:
+    app_dev:
+      children:
+        hosts:
+          dev_host1:
+          dev_host2:
+        vars:
+          deploy_dir: /path/to/destination
+          ansible_user: myuser
+      vars:
+        env: dev
+    app_sit:
+      children:
+        hosts:
+          sit_host1:
+          sit_host2:
+        vars:
+          deploy_dir: /path/to/destination
+          ansible_user: myuser
+      vars:
+        env: sit
+    app_uat:
+      children:
+        hosts:
+          uat_host1:
+          uat_host2:
+        vars:
+          deploy_dir: /path/to/destination
+          ansible_user: myuser
+      vars:
+        env: uat
+        
+    app_prod:
+      children:
+        hosts:
+          prod_host1:
+          prod_host2:
+        vars:
+          deploy_dir: /path/to/destination
+          ansible_user: myuser
+      vars:
+        env: prod

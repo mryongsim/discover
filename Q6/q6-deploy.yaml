@@ -1,0 +1,77 @@
+---
+# Q6. Write a Cookbook/Playbook to host a simple application server with above build artifacts (Question 2).
+- name: Deploy shell scripts to batch servers
+  hosts:  "{{host_group | default('localhost')}}"
+  vars_files:
+    - ../vaulted_vars/main.yml
+  vars:    
+    nexus_base_url: "https://nexus.url:8081/nexus/service/local/artifact/maven/redirect?"
+    nexus_repo: "{{ 'releases' if version.find('SNAPSHOT') == -1 else 'snapshots'}}"
+    packaging: "{{ packaging | default(jar) }}"
+    artifact_link: "{{nexus_base_url}}r={{nexus_repo}}&g={{groupId}}&a={{artifact}}&v={{version}}&packaging={{packaging}}"
+  
+  tasks:
+    - fail:
+        msg: "Missing required parameter host_group. see document at http://path/to/wiki for details"
+      when: host_group is undefined
+
+    - name: 01a. Check destination location exists. if not create it
+      stat:
+        path: "{{deploy_dir}}"
+      register: deploy_dir_check
+
+    - name: 01b. Check destination location exists. if not create it
+      file:
+        path: "{{deploy_dir}}"
+        state: directory
+        mode: '750'
+      when: deploy_dir_check.stat.isdir is undefined
+
+    - name: 02a. Get running processes list from remote host
+      ignore_errors: yes
+      shell: "ps -few | grep {{artifact}} | awk '{print $2}'"
+      register: running_processes
+ 
+    - name: 02b. Kill running processes
+      ignore_errors: yes
+      shell: "kill {{ item }}"
+      with_items: "{{ running_processes.stdout_lines }}"
+ 
+    - wait_for:
+        path: "/proc/{{ item }}/status"
+        state: absent
+      with_items: "{{ running_processes.stdout_lines }}"
+      ignore_errors: yes
+      register: still_running_processes
+ 
+    - name: 02c. Force kill stuck processes
+      ignore_errors: yes
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ still_running_processes.results | select('failed') | map(attribute='item') | list }}"
+
+    #- name: Pull from build
+    #  git:
+    #    repo: 'git@alm-github.systems.uk.mycompany:rcaps/GirsTest.git'
+    #    dest: /tmp/test
+    - name: 03. Create temporary 1-click staging directory
+      tempfile:
+        path: /tmp
+        suffix: 1click
+        state: directory
+      register: stage_path
+
+
+    - name : 04. Pull out from artifact repositories
+      get_url:
+        url: "{{ artifact_link }}"
+        dest: "{{ stage_path.path }}"
+        url_username: "{{nexus_user}}"
+        url_password: "{{nexus_pwd}}"
+      register: saved_file
+
+      
+    - name: 05. Move the jar to destination
+      command: mv {{ saved_file.dest }} {{deploy_dir}}/{{artifact}}.{{packaging}}
+
+    - name : 06. Run
+      shell: 'cd {{ deploy_dir }}; nohup java {{artifact}}.{{packaging}} &'
