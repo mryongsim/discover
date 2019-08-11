@@ -1,5 +1,4 @@
 ---
-# Q6. Write a Cookbook/Playbook to host a simple application server with above build artifacts (Question 2).
 - name: Deploy shell scripts to batch servers
   hosts:  "{{host_group | default('localhost')}}"
   vars_files:
